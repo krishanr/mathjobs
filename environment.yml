@@ -1,0 +1,20 @@
+#Create environment using:
+#$ conda env create --file=file-name.yml
+#We assume the environment has a gpu.
+# This environment is functional on windows.
+name: mathjobs
+channels:
+  - conda-forge
+  - defaults
+  - anaconda
+dependencies:
+- python=3.8
+- pip=21
+- jupyter==1.0.0
+- pip:
+  - beautifulsoup4==4.6.3
+  - requests==2.21.0
+  - matplotlib==3.1.2
+  - html5lib==1.0.1
+  - pandas==1.2.3
+  - scikit-learn==0.24.1
