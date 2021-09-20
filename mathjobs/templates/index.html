@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html ng-app="WordcountApp">
+  <head>
+    <title>MathJob Trends</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.1/nv.d3.css">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+	<style>
+      .container {
+        max-width: 1000px;
+      }
+    </style>
+  </head>
+  <body ng-controller="WordcountController">
+	<div class="container">
+		<div class="row">			
+			<p>
+			   Here's where I'm coming from: At least in applied math, new advances in deep learning and the rise of machine learning in general have brought
+			   many new jobs, both academic and industrial. Whereas academic jobs, such as postdoc or tenure-track,
+			   in pure math are relatively few. My aim is to answer these questions:
+			</p>
+			<ul>
+				<li>What does the job market look like in data science and statistics?</li>
+				<li>Which fields of pure math have been hiring postdocs or tenure-track positions, and if so where?</li>
+			</ul>
+			
+			<p>The app below is a first step toward answering the above questions. It uses data from www.mathjobs.org
+			   and its historical snapshots available on https://archive.org/web (e.g. see http://web.archive.org/web/20010903100442/http://www.mathjobs.org/jobs?joblist).
+			   By typing a keyword, say statistics, it returns the job count on mathjobs.org for some day in
+			   each year from 2011 to 2019.
+			</p>
+		</div>
+		<div class="row">
+			<div class="col">
+			  <h1>Subject Area</h1>
+			  <br>
+			  <form role="form" ng-submit="getResults()">
+				<div class="form-group">
+				  <input type="text" name="keyword" class="form-control" id="keyword-box" placeholder="Enter Keyword..." style="max-width: 300px;" ng-model="keyword">
+				  <input type="text" name="position" class="form-control" id="position-box" placeholder="Enter Position..." style="max-width: 300px;" ng-model="position">
+				</div>
+				{% raw %}
+				  <button type="submit" class="btn btn-primary"
+				  ng-disabled="loading">{{ submitButtonText }}</button>
+				{% endraw %}			
+			  </form>
+			</div>
+		</div>
+		<br>
+		<img class="col-sm-3 col-sm-offset-4" src="{{ url_for('static', filename='spinner.gif') }}" ng-show="loading">
+		<div>
+			<h2 style="display:none" id="chartTitle">Job count for <span ng-bind="position" ></span> positions in <span ng-bind="keyword"></span> </h2>
+			<nvd3-line-chart height="350" 
+			data="keywordData" 
+			showXAxis="true"
+			xaxislabel="Year"
+			showYAxis="true"
+			yaxislabel="Jobs"
+			showLegend="true">
+			</nvd3-line-chart>
+		<!-- TODO: yaxislabel not working! -->
+		</div>
+	</div>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.1/nv.d3.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-nvd3-directives/0.0.7/angularjs-nvd3-directives.min.js"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='mathtrends.js') }}"></script>
+  </body>
+</html>

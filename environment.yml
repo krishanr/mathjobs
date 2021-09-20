@@ -13,8 +13,12 @@ dependencies:
 - jupyter==1.0.0
 - pip:
   - beautifulsoup4==4.6.3
-  - requests==2.21.0
+  - requests==2.25.1
   - matplotlib==3.1.2
   - html5lib==1.0.1
   - pandas==1.2.3
   - scikit-learn==0.24.1
+  - flask==1.1.0
+  - gunicorn==20.0.4
+  - redis==3.4.1
+  - rq==1.2.2
