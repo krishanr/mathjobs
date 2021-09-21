@@ -14,32 +14,15 @@ df = pd.read_csv(project_dir / "data/processed/jobs.csv")
 
 app = dash.Dash(__name__)
 
+fig = px.line(df, x="year", y="jobCount",
+                    color="name", title ="Math job counts")
+
 app.layout = html.Div([
-    dcc.Graph(id='graph-with-slider'),
-    dcc.Slider(
-        id='year-slider',
-        min=df['year'].min(),
-        max=df['year'].max(),
-        value=df['year'].min(),
-        marks={str(year): str(year) for year in df['year'].unique()},
-        step=None
+     dcc.Graph(
+        id='example-graph',
+        figure=fig
     )
 ])
-
-
-@app.callback(
-    Output('graph-with-slider', 'figure'),
-    Input('year-slider', 'value'))
-def update_figure(selected_year):
-    filtered_df = df[df.year == selected_year]
-
-    fig = px.line(filtered_df, x="year", y="jobCount",
-                     color="name", title ="Math job counts")
-
-    fig.update_layout(transition_duration=500)
-
-    return fig
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
