@@ -22,3 +22,4 @@ dependencies:
   - gunicorn==20.0.4
   - redis==3.4.1
   - rq==1.2.2
+  - dash==2.0.0
