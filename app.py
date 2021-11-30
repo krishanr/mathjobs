@@ -15,9 +15,6 @@ project_dir = Path(__file__).resolve().parents[0]
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
 _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
 
-# TODO: why does this duplicate occur?
-# Drop row with id 'astro-ph/0302207', because it gives rise to duplicates.
-df_categories = df_categories.drop(index=df_categories[df_categories['id'] == 'astro-ph/0302207'].index[0])
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -25,6 +22,10 @@ def get_preprint_count(group_name):
     df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
     df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
     df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.zip",dtype={'id': object})
+
+    # TODO: why does this duplicate occur?
+    # Drop row with id 'astro-ph/0302207', because it gives rise to duplicates.
+    df_categories = df_categories.drop(index=df_categories[df_categories['id'] == 'astro-ph/0302207'].index[0])
 
     if group_name:
         ids = df_categories.merge(df_taxonomy, on="category_id").query("group_name.isin(@group_name)", engine="python")["id"].values
