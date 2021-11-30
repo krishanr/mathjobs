@@ -17,6 +17,7 @@ _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv"
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 
 def get_preprint_count(group_name):
     df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
