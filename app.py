@@ -12,9 +12,6 @@ import pandas as pd
 
 project_dir = Path(__file__).resolve().parents[0]
 
-df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
-df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
-df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.zip",dtype={'id': object})
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
 _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
 
@@ -23,6 +20,25 @@ _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv"
 df_categories = df_categories.drop(index=df_categories[df_categories['id'] == 'astro-ph/0302207'].index[0])
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+def get_preprint_count(group_name):
+    df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
+    df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
+    df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.zip",dtype={'id': object})
+
+    if group_name:
+        ids = df_categories.merge(df_taxonomy, on="category_id").query("group_name.isin(@group_name)", engine="python")["id"].values
+    else:
+        ids = df_categories.merge(df_taxonomy, on="category_id")["id"].values
+    df = df_versions.query("id.isin(@ids)", engine="python").query("version == 'v1'").groupby(["year","month"]).agg({"id":'count'}).reset_index()
+
+    df["tot"] = df["id"].cumsum()
+
+    df = df.query("year > 1990 and ( year != 2020 or month < 8)")
+    df["month"] =  df["year"].astype(str) + "-" + df["month"].astype(str)  
+
+    return px.line(df, x="month", y="tot", title ="Arxiv preprint counts")
+
 
 def df_to_plotly(df):
     return {'z': df.values.tolist(),
@@ -63,16 +79,8 @@ def update_plots(selected_radio):
        'Quantitative Biology', 'Statistics', 'Quantitative Finance',
        'Economics', 'Electrical Engineering and Systems Science']
     print(group_name)
-    if group_name:
-        ids = df_categories.merge(df_taxonomy, on="category_id").query("group_name.isin(@group_name)", engine="python")["id"].values
-    else:
-        ids = df_categories.merge(df_taxonomy, on="category_id")["id"].values
-    df = df_versions.query("id.isin(@ids)", engine="python").query("version == 'v1'").groupby(["year","month"]).agg({"id":'count'}).reset_index()
 
-    df["tot"] = df["id"].cumsum()
-
-    df = df.query("year > 1990 and ( year != 2020 or month < 8)")
-    df["month"] =  df["year"].astype(str) + "-" + df["month"].astype(str)  
+    preprint_by_year_fig = get_preprint_count(group_name)
 
     cits = sec_result[sec_result['group_name'].isin(group_name) ].groupby(['year', 'id']).agg({"references":'sum', "title" : 'first'}).reset_index() #top_k_influential(group_name, top_k=3, threshold=10)
     heatmap = get_influential_heatmap (group_name, cits)
@@ -97,7 +105,7 @@ def update_plots(selected_radio):
         #hovermode='y')
     fig.show()
 
-    return [px.line(df, x="month", y="tot", title ="Arxiv preprint counts"), fig]
+    return [preprint_by_year_fig, fig]
 
 group_count_fig = px.bar(_df, x='id', y='group_name')
 #group_count_fig.update_layout(width=500,  height=500,)
