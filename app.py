@@ -13,9 +13,18 @@ import pandas as pd
 project_dir = Path(__file__).resolve().parents[0]
 
 if not (project_dir / "data/processed/archive/arxiv-metadata-ext-version.csv").exists():
+    (project_dir / "data/processed/archive").mkdir(exist_ok=True)
     import zipfile
     with zipfile.ZipFile(project_dir / "arxiv-metadata-processed.zip", 'r') as zip_ref:
-        zip_ref.extractall(project_dir / "data/processed/archive")
+            zip_ref.extract("arxiv-metadata-ext-category.csv",path=project_dir / "data/processed/archive")
+    with zipfile.ZipFile(project_dir / "arxiv-metadata-processed.zip", 'r') as zip_ref:
+            zip_ref.extract("arxiv-group-count.csv",path=project_dir / "data/processed/archive")
+    with zipfile.ZipFile(project_dir / "arxiv-metadata-processed.zip", 'r') as zip_ref:
+            zip_ref.extract("arxiv-metadata-ext-taxonomy.csv",path=project_dir / "data/processed/archive")
+    with zipfile.ZipFile(project_dir / "arxiv-metadata-processed.zip", 'r') as zip_ref:
+            zip_ref.extract("arxiv-metadata-ext-version.csv",path=project_dir / "data/processed/archive")
+    with zipfile.ZipFile(project_dir / "arxiv-metadata-processed.zip", 'r') as zip_ref:
+            zip_ref.extract("arxiv-metadata-influential.csv",path=project_dir / "data/processed/archive")
 
 df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.csv",dtype={'id': object})
 df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
