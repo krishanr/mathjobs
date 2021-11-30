@@ -12,9 +12,9 @@ import pandas as pd
 
 project_dir = Path(__file__).resolve().parents[0]
 
-df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.csv",dtype={'id': object})
+df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
 df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
-df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.csv",dtype={'id': object})
+df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.zip",dtype={'id': object})
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
 _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
 
