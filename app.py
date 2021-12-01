@@ -19,13 +19,13 @@ _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv"
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
-def get_preprint_count(group_name):
+def get_preprint_count(group_name, human_group_name):
     df = df_preprint_count[df_preprint_count['group_name'].isin(group_name) ].groupby(["year","month"]).agg({"id":'sum'}).reset_index()
-    df["tot"] = df["id"].cumsum()
+    df["Count"] = df["id"].cumsum()
     df = df.query("year > 1990 and ( year != 2020 or month < 8)")
-    df["month"] =  df["year"].astype(str) + "-" + df["month"].astype(str)  
+    df["Month"] =  df["year"].astype(str) + "-" + df["month"].astype(str)  
 
-    return px.line(df, x="month", y="tot", title ="Arxiv preprint counts")
+    return px.line(df, x="Month", y="Count", title = f"Preprint counts in {human_group_name}")
 
 
 def df_to_plotly(df):
@@ -68,16 +68,29 @@ def update_plots(selected_radio):
        'Economics', 'Electrical Engineering and Systems Science']
     print(group_name)
 
-    preprint_by_year_fig = get_preprint_count(group_name)
-
     cits = sec_result[sec_result['group_name'].isin(group_name) ].groupby(['year', 'id']).agg({"references":'sum', "title" : 'first'}).reset_index() #top_k_influential(group_name, top_k=3, threshold=10)
     heatmap = get_influential_heatmap (group_name, cits)
 
     data = [heatmap]
     fig = go.Figure(data=data)
 
+    # Make human readable group name
+    human_group_name = ""
+    if len(group_name) == 1:
+        human_group_name = group_name[0]
+    elif len(group_name) == 8:
+        human_group_name = "arXiv"
+    else:
+        human_group_name = group_name[0]
+        for name in group_name[1:-1]:
+            human_group_name += ", " + name
+
+        human_group_name += ", and " + group_name[-1]
+
+    preprint_by_year_fig = get_preprint_count(group_name, human_group_name)
+
     fig.update_layout(
-        title=f"Top influential papers in {group_name}",
+        title=f"Top influential preprints in {human_group_name}",
         font=dict(family="Open Sans"),
         #yaxis_nticks=16,
         #xaxis_nticks=24,
@@ -91,11 +104,14 @@ def update_plots(selected_radio):
             side="left", ticks="", tickfont=dict(family="sans-serif"), ticksuffix=" "
         ),)
         #hovermode='y')
-    fig.show()
 
     return [preprint_by_year_fig, fig]
 
 group_count_fig = px.bar(_df, x='id', y='group_name')
+group_count_fig.update_layout(
+    yaxis_title="Group",
+    xaxis_title="Count"
+)
 #group_count_fig.update_layout(width=500,  height=500,)
 group_count = dcc.Graph(
         id='graph_count',
@@ -111,7 +127,11 @@ top_influential_papers = dcc.Graph(
     id='top_influential_papers',
 )
 # setup the header
-header = html.H2(children="arXiv Analysis")
+header = html.H2(children="arXiv Influential Preprints")
+footer = html.Div(children=["* This dashboard builds on work from ",html.A(
+    href="https://www.kaggle.com/steubk/arxiv-taxonomy-e-top-influential-papers",
+    children="this"
+), " Kaggle notebook."], style={'font-size': '12px'} )
 # setup & apply the layout
 layout = html.Div(
     [
@@ -122,7 +142,8 @@ layout = html.Div(
                 dbc.Col(preprint_by_year,width=6),
             ]
         ),
-        dbc.Row(dbc.Col(top_influential_papers, width=12))
+        dbc.Row(dbc.Col(top_influential_papers, width=12)),
+        dbc.Row(dbc.Col(footer)),
     ]
 )
 
