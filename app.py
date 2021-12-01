@@ -13,29 +13,15 @@ import pandas as pd
 project_dir = Path(__file__).resolve().parents[0]
 
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
+df_preprint_count = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-preprint-count.csv")
 _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
-
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 def get_preprint_count(group_name):
-    df_versions =  pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-version.zip",dtype={'id': object})
-    df_taxonomy = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-taxonomy.csv")
-    df_categories = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-ext-category.zip",dtype={'id': object})
-
-    # TODO: why does this duplicate occur?
-    # Drop row with id 'astro-ph/0302207', because it gives rise to duplicates.
-    df_categories = df_categories.drop(index=df_categories[df_categories['id'] == 'astro-ph/0302207'].index[0])
-
-    if group_name:
-        ids = df_categories.merge(df_taxonomy, on="category_id").query("group_name.isin(@group_name)", engine="python")["id"].values
-    else:
-        ids = df_categories.merge(df_taxonomy, on="category_id")["id"].values
-    df = df_versions.query("id.isin(@ids)", engine="python").query("version == 'v1'").groupby(["year","month"]).agg({"id":'count'}).reset_index()
-
+    df = df_preprint_count[df_preprint_count['group_name'].isin(group_name) ].groupby(["year","month"]).agg({"id":'sum'}).reset_index()
     df["tot"] = df["id"].cumsum()
-
     df = df.query("year > 1990 and ( year != 2020 or month < 8)")
     df["month"] =  df["year"].astype(str) + "-" + df["month"].astype(str)  
 
