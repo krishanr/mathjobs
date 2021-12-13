@@ -15,6 +15,7 @@ project_dir = Path(__file__).resolve().parents[0]
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
 df_preprint_count = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-preprint-count.csv")
 _df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
+cits = None
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -32,6 +33,9 @@ def df_to_plotly(df):
     return {'z': df.values.tolist(),
             'x': df.columns.tolist(),
             'y': df.index.tolist()}
+
+def click_callback(trace, points, selector):
+    print("Click")
 
 def get_influential_heatmap (group_name, cits):
     cits['titleSmal'] = cits['title'].str[:30] + " ..."
@@ -52,6 +56,30 @@ def get_influential_heatmap (group_name, cits):
     return heatmap
 
 @app.callback(
+    Output('pre_title', 'children'),
+    Output('pre_authors', 'children'),
+    Output('pre_abstract', 'children'),
+    Output('pre_links', 'children'),
+    Input('top_influential_papers', 'clickData'))
+def update_graph(hoverData):
+    global cits 
+    if cits is not None and hoverData is not None:
+        titleSmal = hoverData['points'][0]['y']
+        id = cits[cits['titleSmal'] == titleSmal].iloc[0].id
+        #print(sec_result[sec_result['id'] == id])
+
+        result = sec_result[sec_result['id'] == id]
+        
+        link = [ html.Span(f"{id}  ", style={ "font-weight": "lighter"}) , html.A(
+            href= f"https://arxiv.org/pdf/{id}",
+            children=[  "pdf"  ], 
+        )]
+
+        return result.title.iloc[0], result.authors.iloc[0], result.abstract.iloc[0], link
+    else:
+        return "", "", "", ""
+
+@app.callback(
     [
         Output("preprint_by_year", "figure"),
         Output("top_influential_papers", "figure")
@@ -61,6 +89,8 @@ def get_influential_heatmap (group_name, cits):
     ],
 )
 def update_plots(selected_radio):
+    global cits 
+
     group_name = [ point_dict['y'] for point_dict in selected_radio['points']] if selected_radio else ""
     if not group_name:
         group_name = ['Physics', 'Mathematics', 'Computer Science',
@@ -143,7 +173,23 @@ layout = html.Div(
             ]
         ),
         dbc.Row(dbc.Col(top_influential_papers, width=12)),
+        dbc.Row(dbc.Col( dbc.Container(
+    [
+        html.H5(children="Select bank & dataset size", className="display-5", id="pre_title"),
+        html.Hr(className="my-2"),
+        html.Div([
+            dbc.Row([
+                dbc.Col( html.P( "(Lower is faster. Higher is more precise)", id="pre_authors" ) , width=10),
+                dbc.Col( html.P( "",  id="pre_links" ) , width=2)
+            ])
+        ]),
+        html.P(
+            "(You can define the time frame down to month granularity)", id="pre_abstract"
+        ),
+    ]
+),align="center", style={"backgroundColor": "rgb(243, 246, 251)"})),
         dbc.Row(dbc.Col(footer)),
+        dbc.Row(dbc.Col(html.P(id='placeholder')))
     ]
 )
 
