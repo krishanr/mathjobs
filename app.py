@@ -14,7 +14,8 @@ project_dir = Path(__file__).resolve().parents[0]
 
 sec_result =  pd.read_csv((project_dir / "data/processed/archive/arxiv-metadata-influential.csv"),dtype={'id': object})
 df_preprint_count = pd.read_csv(project_dir / "data/processed/archive/arxiv-metadata-preprint-count.csv")
-_df = pd.read_csv( (project_dir / "data/processed/archive/arxiv-group-count.csv") )
+cits_full = pd.read_csv((project_dir / "data/web/arxiv-metadata-influential.csv"),dtype={'id': object})
+_df = pd.read_csv( (project_dir / "data/web/arxiv-group-count.csv") )
 cits = None
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -28,16 +29,12 @@ def get_preprint_count(group_name, human_group_name):
 
     return px.line(df, x="Month", y="Count", title = f"Preprint counts in {human_group_name}")
 
-
 def df_to_plotly(df):
     return {'z': df.values.tolist(),
             'x': df.columns.tolist(),
             'y': df.index.tolist()}
 
-def click_callback(trace, points, selector):
-    print("Click")
-
-def get_influential_heatmap (group_name, cits):
+def get_influential_heatmap (cits):
     cits['titleSmal'] = cits['title'].str[:30] + " ..."
     hm_cits = cits.pivot(index="titleSmal", columns="year",values="references")
     hm_cits = hm_cits.fillna(0)
@@ -56,6 +53,129 @@ def get_influential_heatmap (group_name, cits):
     return heatmap
 
 @app.callback(
+    [
+        Output("top_influential_papers", "figure")
+    ],
+    [
+        Input("category_map", "clickData"),
+    ],
+)
+def update_plots(selected_item):
+    global cits 
+    print(selected_item)
+
+    path = None
+    if selected_item:
+        path = selected_item['points'][0]['id'].split("/")
+
+    if (not selected_item) or  len(path) < 2:
+        group_name = ['Physics', 'Mathematics', 'Computer Science',
+        'Quantitative Biology', 'Statistics', 'Quantitative Finance',
+        'Economics', 'Electrical Engineering and Systems Science']
+
+        cits = sec_result[sec_result['group_name'].isin(group_name) ].groupby(['year', 'id']).agg({"references":'sum', "title" : 'first'}).reset_index() #top_k_influential(group_name, top_k=3, threshold=10)
+        heatmap = get_influential_heatmap ( cits)
+
+        data = [heatmap]
+        fig = go.Figure(data=data)
+
+        # Make human readable group name
+        human_group_name = ""
+        if len(group_name) == 1:
+            human_group_name = group_name[0]
+        elif len(group_name) == 8:
+            human_group_name = "arXiv"
+        else:
+            human_group_name = group_name[0]
+            for name in group_name[1:-1]:
+                human_group_name += ", " + name
+
+            human_group_name += ", and " + group_name[-1]
+
+        fig.update_layout(
+            title=f"Top influential preprints in {human_group_name}",
+            font=dict(family="Open Sans"),
+            #yaxis_nticks=16,
+            #xaxis_nticks=24,
+            xaxis=dict(
+                    ticks="",
+                    ticklen=2,
+                    tickfont=dict(family="sans-serif"),
+                    tickcolor="#ffffff",
+            ),
+            yaxis=dict(
+                side="left", ticks="", tickfont=dict(family="sans-serif"), ticksuffix=" "
+            ),)
+            #hovermode='y')
+    elif len(path) == 2:
+        cits = cits_full[cits_full['group_name'] == path[1]]
+
+        # Added this line to remove duplicate ids within a year.
+        cits = cits.groupby(['year', 'id']).first().reset_index()
+
+        # Collect the influential publications within this group.
+        top_k, threshold = 3, 10 #TODO: centralize these variables.
+        cits = cits.loc[cits.groupby(['year'])['references'].nlargest(top_k).reset_index()['level_1']]
+        cits = cits.query ( "references > @threshold" )
+
+        heatmap = get_influential_heatmap (cits)
+
+        data = [heatmap]
+        fig = go.Figure(data=data)
+
+        # Make human readable group name
+        human_group_name = path[1]
+
+        fig.update_layout(
+            title=f"Top influential preprints in {human_group_name}",
+            font=dict(family="Open Sans"),
+            #yaxis_nticks=16,
+            #xaxis_nticks=24,
+            xaxis=dict(
+                    ticks="",
+                    ticklen=2,
+                    tickfont=dict(family="sans-serif"),
+                    tickcolor="#ffffff",
+            ),
+            yaxis=dict(
+                side="left", ticks="", tickfont=dict(family="sans-serif"), ticksuffix=" "
+            ),)
+
+    elif len(path) == 3:
+        # Specify the group_name and category_name, since the 'Numerical Analysis' category appears in
+        # mathematics and computer science.
+        cits = cits_full[(cits_full['group_name'] == path[1]) & (cits_full['category_name'] == path[2])]
+        heatmap = get_influential_heatmap (cits)
+
+        data = [heatmap]
+        fig = go.Figure(data=data)
+
+        # Make human readable group name
+        human_group_name = path[2]
+
+        fig.update_layout(
+            title=f"Top influential preprints in {human_group_name}",
+            font=dict(family="Open Sans"),
+            #yaxis_nticks=16,
+            #xaxis_nticks=24,
+            xaxis=dict(
+                    ticks="",
+                    ticklen=2,
+                    tickfont=dict(family="sans-serif"),
+                    tickcolor="#ffffff",
+            ),
+            yaxis=dict(
+                side="left", ticks="", tickfont=dict(family="sans-serif"), ticksuffix=" "
+            ),)
+    else:
+        import Exception
+
+        #TODO: handle this.
+        raise Exception("Unanticipated situation")
+
+    return [fig]
+
+@app.callback(
     Output('pre_title', 'children'),
     Output('pre_authors', 'children'),
     Output('pre_abstract', 'children'),
@@ -68,7 +188,7 @@ def update_graph(hoverData):
         id = cits[cits['titleSmal'] == titleSmal].iloc[0].id
         #print(sec_result[sec_result['id'] == id])
 
-        result = sec_result[sec_result['id'] == id]
+        result = cits_full[cits_full['id'] == id]
         
         link = [ html.Span(f"{id}  ", style={ "font-weight": "lighter"}) , html.A(
             href= f"https://arxiv.org/pdf/{id}",
@@ -79,63 +199,7 @@ def update_graph(hoverData):
     else:
         return "", "", "", ""
 
-@app.callback(
-    [
-        Output("preprint_by_year", "figure"),
-        Output("top_influential_papers", "figure")
-    ],
-    [
-        Input("graph_count", "selectedData"),
-    ],
-)
-def update_plots(selected_radio):
-    global cits 
 
-    group_name = [ point_dict['y'] for point_dict in selected_radio['points']] if selected_radio else ""
-    if not group_name:
-        group_name = ['Physics', 'Mathematics', 'Computer Science',
-       'Quantitative Biology', 'Statistics', 'Quantitative Finance',
-       'Economics', 'Electrical Engineering and Systems Science']
-    print(group_name)
-
-    cits = sec_result[sec_result['group_name'].isin(group_name) ].groupby(['year', 'id']).agg({"references":'sum', "title" : 'first'}).reset_index() #top_k_influential(group_name, top_k=3, threshold=10)
-    heatmap = get_influential_heatmap (group_name, cits)
-
-    data = [heatmap]
-    fig = go.Figure(data=data)
-
-    # Make human readable group name
-    human_group_name = ""
-    if len(group_name) == 1:
-        human_group_name = group_name[0]
-    elif len(group_name) == 8:
-        human_group_name = "arXiv"
-    else:
-        human_group_name = group_name[0]
-        for name in group_name[1:-1]:
-            human_group_name += ", " + name
-
-        human_group_name += ", and " + group_name[-1]
-
-    preprint_by_year_fig = get_preprint_count(group_name, human_group_name)
-
-    fig.update_layout(
-        title=f"Top influential preprints in {human_group_name}",
-        font=dict(family="Open Sans"),
-        #yaxis_nticks=16,
-        #xaxis_nticks=24,
-        xaxis=dict(
-                ticks="",
-                ticklen=2,
-                tickfont=dict(family="sans-serif"),
-                tickcolor="#ffffff",
-        ),
-        yaxis=dict(
-            side="left", ticks="", tickfont=dict(family="sans-serif"), ticksuffix=" "
-        ),)
-        #hovermode='y')
-
-    return [preprint_by_year_fig, fig]
 
 group_count_fig = px.bar(_df, x='id', y='group_name')
 group_count_fig.update_layout(
@@ -146,6 +210,15 @@ group_count_fig.update_layout(
 group_count = dcc.Graph(
         id='graph_count',
         figure=group_count_fig
+)
+
+category_map_fig = px.treemap(_df[~_df['group_name'].isna()].sort_values('id'), path=[px.Constant("all"), 'group_name', 'category_name'], values='val')
+category_map_fig.update_traces(root_color="lightgrey")
+category_map_fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
+
+category_map = dcc.Graph(
+    id='category_map',
+    figure=category_map_fig
 )
 
 # bootstrap layout: https://dash-bootstrap-components.opensource.faculty.ai/docs/components/layout/
@@ -166,12 +239,7 @@ footer = html.Div(children=["* This dashboard builds on work from ",html.A(
 layout = html.Div(
     [
         dbc.Row(dbc.Col(header)),
-        dbc.Row(
-            [
-                dbc.Col(group_count,width=6),
-                dbc.Col(preprint_by_year,width=6),
-            ]
-        ),
+        dbc.Row(dbc.Col(category_map)),
         dbc.Row(dbc.Col(top_influential_papers, width=12)),
         dbc.Row(dbc.Col( dbc.Container(
     [
