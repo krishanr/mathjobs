@@ -76,13 +76,13 @@ def update_plots(selected_item):
     path = None
     if selected_item:
         path = selected_item['points'][0]['id'].split("/")
-    elif cits is None:
+    else: #elif cits is None:
         # This occurs when the app first starts.
         # default to the all state.
         selected_item = "all"
         path = ["all"]
-    else:
-        return [go.Figure() ]
+    #else:
+    #    return [go.Figure() ]
 
     if selected_item and  len(path) < 2:
         # Added this line to remove duplicate ids within a year.
@@ -215,4 +215,4 @@ layout = html.Div(
 app.layout = layout
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
