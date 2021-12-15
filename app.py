@@ -27,6 +27,7 @@ cits = None
 # https://www.semanticscholar.org/
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = "arXiv Influential Preprints"
 server = app.server
 
 def df_to_plotly(df):
@@ -76,13 +77,11 @@ def update_plots(selected_item):
     path = None
     if selected_item:
         path = selected_item['points'][0]['id'].split("/")
-    else: #elif cits is None:
+    else:
         # This occurs when the app first starts.
         # default to the all state.
         selected_item = "all"
         path = ["all"]
-    #else:
-    #    return [go.Figure() ]
 
     if selected_item and  len(path) < 2:
         # Added this line to remove duplicate ids within a year.
