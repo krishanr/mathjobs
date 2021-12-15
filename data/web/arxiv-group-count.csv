@@ -1,4 +1,4 @@
-category_id,id,group_name,category_name,category_description,val
+category_id,id,group_name,category_name,category_description,count
 hep-ph,121323,Physics,High Energy Physics - Phenomenology,"Theoretical particle physics and its interrelation with experiment. Prediction of particle physics observables: models, effective field theories, calculation techniques. Particle physics: analysis of theory through experimental results.",121323
 astro-ph,105316,,,,105316
 hep-th,99473,Physics,High Energy Physics - Theory,"Formal aspects of quantum field theory. String theory, supersymmetry and supergravity.",99473
