@@ -56,7 +56,7 @@ def get_influential_heatmap(cits): #TODO: citation counts of 0 are in accurate. 
 
     heatmap_data['y'] = [ item[1] for item in hm_cits.index.to_list()] # Only use titleSmal in the actual heatmap.
     # Setting grid lines: https://community.plotly.com/t/grid-lines-placement-in-heatmap/2628/3
-    heatmap = go.Heatmap(**heatmap_data, type = 'heatmap',colorscale=[[0, "#caf3ff"], [1, "#2c82ff"]], hoverinfo='text', text=hovertext)
+    heatmap = go.Heatmap(**heatmap_data, type = 'heatmap',colorscale=[[0, "#F08080"], [1, "#b31b1b"]], hoverinfo='text', text=hovertext)
 
     #TODO: what to do when the heatmap is empty? like for general topology?
     return heatmap
@@ -165,7 +165,8 @@ def update_graph(hoverData):
     else:
         return {"display": "none"}, "", "", "", ""
 
-category_map_fig = px.treemap(_df[~_df['group_name'].isna()].sort_values('id'), path=[px.Constant("all"), 'group_name', 'category_name'], values='count')
+category_map_fig = px.treemap(_df[~_df['group_name'].isna()].sort_values('id'), path=[px.Constant("all"), 'group_name', 'category_name'], values='count', \
+                              color='count', color_continuous_scale='reds_r')
 category_map_fig.update_traces(root_color="lightgrey")
 category_map_fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
 
@@ -180,7 +181,7 @@ top_influential_papers = dcc.Graph(
 )
 
 # setup the header and footer.
-header = dbc.NavbarSimple( brand="arXiv Influential Preprints", brand_href="#", color="primary", dark=True, )
+header = dbc.NavbarSimple( brand="arXiv Influential Preprints", brand_href="#", color="#b31b1b", dark=True, )
 footer = html.Div(children=["* This dashboard builds on work from ",html.A(
     href="https://www.kaggle.com/steubk/arxiv-taxonomy-e-top-influential-papers",
     children="this"
