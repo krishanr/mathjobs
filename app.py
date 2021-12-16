@@ -166,7 +166,7 @@ def update_graph(hoverData):
         return {"display": "none"}, "", "", "", ""
 
 category_map_fig = px.treemap(_df[~_df['group_name'].isna()].sort_values('id'), path=[px.Constant("all"), 'group_name', 'category_name'], values='count', \
-                              color='count', color_continuous_scale='reds_r')
+                              color='count', color_continuous_scale='reds')
 category_map_fig.update_traces(root_color="lightgrey")
 category_map_fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
 
