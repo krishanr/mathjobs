@@ -15,6 +15,7 @@ project_dir = Path(__file__).resolve().parents[0]
 cits_full = pd.read_csv((project_dir / "data/web/arxiv-metadata-influential.csv"),dtype={'id': object})
 _df = pd.read_csv( (project_dir / "data/web/arxiv-group-count.csv") )
 cits = None
+top_k, threshold = 3, 10
 
 #TODO: how does the app preform for missing categories. E.g. there are 155 categories in counts but only 137 for creating heatmaps?
 
@@ -43,13 +44,13 @@ def get_influential_heatmap(cits): #TODO: citation counts of 0 are in accurate. 
         Since many publications have the same number of citations, the influential preprints heatmap isn't guarenteed to be unique, or reproducible.
     """
     cits['titleSmal'] = cits['title'].str[:30] + " ..."
-    hm_cits = cits.pivot(index=["id", 'titleSmal'], columns="year",values="references") # Use id as the index to avoid collisions. Add titleSmal for display.
+    hm_cits = cits.pivot(index=["id", 'titleSmal', 'title'], columns="year",values="references") # Use id as the index to avoid collisions. Add titleSmal for display.
     hm_cits = hm_cits.fillna(0)
 
     titles = [ item[1] for item in hm_cits.index.to_list()]
     heatmap_data = df_to_plotly(hm_cits)
     hovertext = list()
-    for yi, ( yid,yy) in enumerate(heatmap_data['y']):
+    for yi, ( yid,yx,yy) in enumerate(heatmap_data['y']):
         hovertext.append(list())
         for xi, xx in enumerate(heatmap_data['x']):
             hovertext[-1].append('Year: {}<br />Title: {}<br />Count: {}<br />Id: {}'.format(xx, yy, heatmap_data['z'][yi][xi], yid))
@@ -71,8 +72,6 @@ def get_influential_heatmap(cits): #TODO: citation counts of 0 are in accurate. 
 )
 def update_plots(selected_item):
     global cits 
-
-    top_k, threshold = 3, 10 #TODO: centralize these variables.
     
     path = None
     if selected_item:
@@ -149,21 +148,32 @@ def update_plots(selected_item):
     Input('top_influential_papers', 'clickData'))
 def update_graph(hoverData):
     global cits 
-    if cits is not None and hoverData is not None:
+
+    if hoverData is not None:
         id = hoverData['points'][0]['text'].split("<br />")[-1][4:]
-
-        result = cits_full[cits_full['id'] == id]
-
-        link = [ html.Span(f"{id}  ", style={ "font-weight": "lighter"}) , html.A(
-            href= f"https://arxiv.org/pdf/{id}",
-            children=[  "pdf"  ], 
-        )]
-
-        metadata = [ html.Span(result.authors.iloc[0]) , html.Br() ,html.Span(result.year_orig.iloc[0]) ]
-
-        return {}, result.title.iloc[0], metadata, result.abstract.iloc[0], link
+    elif cits is not None:
+        id = cits.sample(1).id.iloc[0]
     else:
-        return {"display": "none"}, "", "", "", ""
+        # Manually create the top arXiv table for initalizing the app.
+        temp_cits = cits_full.groupby(['year', 'id']).first().reset_index()
+
+        # Collect the influential publications within this group.
+        temp_cits = temp_cits.loc[temp_cits.groupby(['year'])['references'].nlargest(top_k).reset_index()['level_1']]
+        temp_cits = temp_cits.query ( "references > @threshold" )
+
+        id = temp_cits.sample(1).id.iloc[0]
+
+    result = cits_full[cits_full['id'] == id]
+
+    link = [ html.Span(f"{id}  ", style={ "font-weight": "lighter"}) , html.A(
+        href= f"https://arxiv.org/pdf/{id}",
+        children=[  "pdf"  ], 
+    )]
+
+    metadata = [ html.Span(result.authors.iloc[0]) , html.Br() ,html.Span(result.year_orig.iloc[0]) ]
+
+    return {}, result.title.iloc[0], metadata, result.abstract.iloc[0], link
+
 
 category_map_fig = px.treemap(_df[~_df['group_name'].isna()].sort_values('id'), path=[px.Constant("all"), 'group_name', 'category_name'], values='count', \
                               color='count', color_continuous_scale='reds')
