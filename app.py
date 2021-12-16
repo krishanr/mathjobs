@@ -28,7 +28,7 @@ top_k, threshold = 3, 10
 # https://www.semanticscholar.org/
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.title = "arXiv Influential Preprints"
+app.title = "arXiv explorer"
 server = app.server
 
 def df_to_plotly(df):
@@ -191,7 +191,7 @@ top_influential_papers = dcc.Graph(
 )
 
 # setup the header and footer.
-header = dbc.NavbarSimple( brand="arXiv Influential Preprints", brand_href="#", color="#b31b1b", dark=True, )
+header = dbc.NavbarSimple( brand="arXiv explorer", children="View trends in the arXiv at a high level." , brand_href="#", color="#b31b1b", dark=True, )
 footer = html.Div(children=["* This dashboard builds on work from ",html.A(
     href="https://www.kaggle.com/steubk/arxiv-taxonomy-e-top-influential-papers",
     children="this"
